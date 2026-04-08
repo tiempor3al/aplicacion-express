@@ -3,8 +3,9 @@
 {
 	"name": "Bun",
 	"image": "mcr.microsoft.com/devcontainers/base:alpine-3.22",
-	"features": {
-		"ghcr.io/oven-sh/features/bun:1": {}
-	},
-	"postCreateCommand": "bun install"
+	"onCreateCommand": "curl -fsSL https://bun.sh/install | bash",
+	"postCreateCommand": "/root/.bun/bin/bun install",
+	"remoteEnv": {
+		"PATH": "/root/.bun/bin:${containerEnv:PATH}"
+	}
 }
