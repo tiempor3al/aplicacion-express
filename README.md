@@ -1,3 +1,37 @@
+## ¿Qué tecnologías usa este proyecto?
+
+### Bun
+
+[Bun](https://bun.sh) es un entorno de ejecución para JavaScript, similar a Node.js, pero diseñado para ser más rápido. Además de correr código JavaScript, Bun incluye su propio manejador de paquetes (reemplaza a `npm` o `yarn`), un corredor de tests integrado y soporte nativo para SQLite, sin necesidad de instalar librerías externas.
+
+En este proyecto, Bun cumple tres roles:
+- **Ejecutar** el servidor con `bun start`
+- **Instalar dependencias** con `bun install`
+- **Correr los tests** con `bun test`
+
+### Hono
+
+[Hono](https://hono.dev) es un framework web minimalista y muy rápido para construir APIs HTTP. Funciona de forma similar a Express, pero está diseñado desde cero para ser ligero y moderno.
+
+Un endpoint básico en Hono se ve así:
+
+```js
+import { Hono } from 'hono'
+
+const app = new Hono()
+
+app.get('/saludo', (c) => {
+    return c.json({ mensaje: 'Hola mundo' })
+})
+
+export default app
+```
+
+- `app.get` / `app.post` definen las rutas y el método HTTP.
+- `c` es el contexto de la petición: con `c.req` acceden a los datos que llegan, y con `c.json()` envían la respuesta.
+
+---
+
 ## Crear un nuevo repositorio desde esta plantilla
 
 1. Hagan clic en el botón **"Use this template"** en la esquina superior derecha del repositorio en GitHub.
