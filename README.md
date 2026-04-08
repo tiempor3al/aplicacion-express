@@ -1,32 +1,92 @@
-## Crear un nuevo repositorio público
+## Crear un nuevo repositorio desde esta plantilla
 
-* Copien los archivos app.js, .gitignore y package.json a este nuevo repositorio.
-* Asegúrense de realizarlo en la rama main.
+1. Hagan clic en el botón **"Use this template"** en la esquina superior derecha del repositorio en GitHub.
+2. Seleccionen **"Create a new repository"**.
+3. Asegúrense de que la visibilidad sea **pública** y que la rama principal sea `main`.
 
-## Correr la aplicación 
-* Creen un CodeSpace en la rama main y usen la terminal para instalar las dependencias de la aplicación:
+## Correr la aplicación
+
+Creen un CodeSpace en la rama main y usen la terminal para instalar las dependencias:
+
 ```
-yarn install
+bun install
 ```
-Si se ha realizado satisfactoriamente la instalación, deberán ver una carpeta node_modules.
+
+Si se ha realizado satisfactoriamente la instalación, deberán ver una carpeta `node_modules` y el archivo `bun.lockb`.
 
 Posteriormente, para correr la aplicación:
+
 ```
-yarn start
+bun start
 ```
 
 Para correr los tests:
+
 ```
-yarn test
+bun test
 ```
 
-La aplicación creará el archivo de base de datos "base.sqlite3", y CodeSpace preguntará si desean hacer público el puerto 3000. Respondan que sí.
+La aplicación creará el archivo de base de datos `base.sqlite3`, y CodeSpace preguntará si desean hacer público el puerto 3000. Respondan que sí.
 
-Pueden verificar que el puerto sea público en la pestaña "Puertos".
+Pueden verificar que el puerto sea público en la pestaña **"Puertos"**.
 
-Copien la dirección pública que especifica CodeSpace en esta pestaña. Den clic en el enlace para aceptar que van a exponer la aplicación a Internet. 
+Copien la dirección pública que especifica CodeSpace en esta pestaña. Den clic en el enlace para aceptar que van a exponer la aplicación a Internet.
 
 El enlace debería poder usarse desde Postman o la aplicación móvil.
+
+## ¿Qué es GitHub Codespaces?
+
+GitHub Codespaces es un entorno de desarrollo en la nube que corre directamente en el navegador. En lugar de instalar herramientas en su computadora, Codespaces les proporciona una máquina virtual con todo lo necesario ya configurado: el editor de código, la terminal y el servidor.
+
+Para abrir un Codespace en este repositorio:
+
+1. Vayan a su repositorio en GitHub.
+2. Hagan clic en el botón verde **"Code"**.
+3. Seleccionen la pestaña **"Codespaces"**.
+4. Hagan clic en **"Create codespace on main"**.
+
+Se abrirá un editor en el navegador. Desde ahí pueden editar archivos y usar la terminal exactamente igual que en una computadora local.
+
+## Exponer el API con un túnel público
+
+Su aplicación Expo corre en su teléfono o emulador, pero el API corre dentro de Codespaces. Para que ambos puedan comunicarse, necesitan hacer público el puerto del servidor creando un **túnel**.
+
+### Cómo habilitar el túnel en Codespaces
+
+1. Corran la aplicación en la terminal:
+   ```
+   bun start
+   ```
+2. Codespaces mostrará una notificación que dice **"Your application running on port 3000 is available"**. Hagan clic en **"Open in Browser"** o vayan a la pestaña **"Ports"** en la parte inferior del editor.
+3. En la pestaña **"Ports"**, localicen el puerto **3000** y hagan clic derecho sobre él.
+4. Seleccionen **"Port Visibility"** → **"Public"**.
+
+> Si no cambian la visibilidad a pública, su app de Expo no podrá conectarse porque el túnel requerirá autenticación.
+
+### Obtener la URL pública
+
+En la misma pestaña **"Ports"**, copien la URL que aparece en la columna **"Forwarded Address"**. Tendrá un formato similar a:
+
+```
+https://tu-usuario-3000.app.github.dev
+```
+
+### Conectar el API a su app de Expo
+
+Usen esa URL como la dirección base de su API en la app de Expo. Por ejemplo, si están usando `fetch`:
+
+```js
+const API_URL = 'https://tu-usuario-3000.app.github.dev'
+
+const response = await fetch(`${API_URL}/todos`)
+const data = await response.json()
+```
+
+Reemplacen `https://tu-usuario-3000.app.github.dev` con la URL copiada de la pestaña **"Ports"** de su Codespace.
+
+> La URL cambia cada vez que crean un nuevo Codespace, así que deberán actualizarla en su app cuando eso ocurra.
+
+---
 
 ## Usar el archivo base.sqlite3 desde CodeSpace
 
@@ -63,17 +123,136 @@ Para interactuar con la base de datos SQLite desde CodeSpace, sigan estos pasos:
 
 Recuerden que SQLite es sensible a mayúsculas y minúsculas en los nombres de las tablas y columnas. Asegúrense de escribir los comandos exactamente como se muestran.
 
-## Ejemplos
+## Usar SQLite con Hono y Bun
 
-# Hacer fork del repositorio y mandar un cambio
-[![Hacer fork y mandar un cambio en Codespace](assets/fork.gif)](assets/fork.webm)
+Bun incluye soporte nativo para SQLite a través del módulo `bun:sqlite`, sin necesidad de instalar ningún paquete adicional.
 
-# Iniciar la aplicación y habilitar el túnel (clic para descargar el video webm, despues elegir 'view raw')
-### Nota: Usen un navegador para ver los videos
-[![Iniciar la aplicación y habilitar el túnel](assets/iniciar.gif)](assets/iniciar.webm)
+### Abrir la base de datos
 
-# Crear una rama y subir los cambios
-[![Crear una rama y subir los cambios](assets/subir_cambio.gif)](assets/subir_cambio.webm)
+```js
+import { Database } from 'bun:sqlite'
 
-# Usar Sqlite y Postman 
-[![Usar Sqlite y Postman](assets/insercion.gif)](assets/insercion.webm)
+const db = new Database('./base.sqlite3')
+```
+
+Bun crea el archivo automáticamente si no existe. Para usar una base de datos solo en memoria (útil para tests):
+
+```js
+const db = new Database(':memory:')
+```
+
+### Crear una tabla
+
+```js
+db.run(`CREATE TABLE IF NOT EXISTS todos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    todo TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+)`)
+```
+
+### Insertar un registro
+
+```js
+const stmt = db.prepare('INSERT INTO todos (todo) VALUES (?)')
+const result = stmt.run('Mi primera tarea')
+
+console.log(result.lastInsertRowid) // ID del registro insertado
+```
+
+### Consultar registros
+
+```js
+// Todos los registros
+const todos = db.query('SELECT * FROM todos').all()
+
+// Un solo registro por ID
+const todo = db.query('SELECT * FROM todos WHERE id = ?').get(1)
+```
+
+### Usar la base de datos en un endpoint de Hono
+
+```js
+import { Hono } from 'hono'
+import { Database } from 'bun:sqlite'
+
+const db = new Database('./base.sqlite3')
+const app = new Hono()
+
+app.get('/todos', (c) => {
+    const todos = db.query('SELECT * FROM todos').all()
+    return c.json(todos)
+})
+
+app.post('/todos', async (c) => {
+    const { todo } = await c.req.json()
+    const stmt = db.prepare('INSERT INTO todos (todo) VALUES (?)')
+    const result = stmt.run(todo)
+    return c.json({ id: Number(result.lastInsertRowid) }, 201)
+})
+```
+
+### Cerrar la base de datos
+
+```js
+db.close()
+```
+
+---
+
+## Subir sus cambios mediante un Pull Request
+
+Un Pull Request (PR) es la forma correcta de proponer cambios en un repositorio. Sigan estos pasos desde la terminal de CodeSpace:
+
+### 1. Creen una rama nueva para sus cambios
+
+Nunca trabajen directamente en `main`. Creen una rama con su nombre o una descripción corta del cambio:
+
+```
+git checkout -b mi-nombre/mi-cambio
+```
+
+Por ejemplo:
+```
+git checkout -b ana/agregar-endpoint
+```
+
+### 2. Realicen sus cambios
+
+Editen los archivos que necesiten modificar.
+
+### 3. Verifiquen qué archivos cambiaron
+
+```
+git status
+```
+
+### 4. Agreguen los archivos al área de preparación
+
+```
+git add .
+```
+
+### 5. Creen un commit con un mensaje descriptivo
+
+```
+git commit -m "Descripción breve de lo que hicieron"
+```
+
+### 6. Suban la rama a GitHub
+
+```
+git push origin mi-nombre/mi-cambio
+```
+
+> Reemplacen `mi-nombre/mi-cambio` por el nombre de la rama que crearon en el paso 1.
+
+### 7. Abran el Pull Request en GitHub
+
+1. Vayan a su repositorio en GitHub.
+2. Aparecerá un banner amarillo que dice **"Compare & pull request"** — hagan clic ahí.
+3. Asegúrense de que la rama destino sea `main`.
+4. Escriban un título y descripción clara de sus cambios.
+5. Hagan clic en **"Create pull request"**.
+
+Sus cambios quedarán en revisión. Los tests de CI correrán automáticamente para verificar que todo funcione correctamente.

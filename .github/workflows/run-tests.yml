@@ -1,4 +1,4 @@
-name: Node.js CI (Yarn)
+name: Bun CI
 
 on:
   pull_request:
@@ -12,16 +12,11 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: 'yarn'
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Instalar dependencias
-        # --frozen-lockfile asegura que no se modifique el yarn.lock
-        # Si el yarn.lock no coincide con el package.json, el CI fallará (esto es bueno para seguridad)
-        run: yarn install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
-      - name: Correr tests con Jest
-        run: yarn test
+      - name: Correr tests
+        run: bun test
